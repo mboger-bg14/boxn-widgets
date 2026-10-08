@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boxn romfordeling</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    background: #FFFFFF;
+    color: #212527;
+    box-sizing: border-box;
+    padding: 8px;
+  }
+  /* Rutenett: 3 kolonner og 9 rader (2 høye + 5 enkle + 2 høye).
+     Hvert rom plasseres med grid-column og grid-row under. */
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(9, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+  }
+  .cell {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F7F7F8;
+    border: 1px solid #D6DADC;
+    border-radius: 6px;
+  }
+  .nr { font-size: 18px; font-weight: 600; color: #212527; line-height: 1; }
+  .size { position: absolute; left: 6px; bottom: 4px; font-size: 10px; font-weight: 500; color: #464F53; line-height: 1; }
+  .screen { background: #EEF0F1; }
+  .screen .nr { font-size: 13px; font-weight: 500; color: #464F53; }
+
+  /* Brukes først når status legges inn (se setStatus nederst). */
+  .cell[data-status="ledig"]     { background: #DCFCE7; }
+  .cell[data-status="opptatt"]   { background: #EEF0F1; }
+  .cell[data-status="reservert"] { background: #FEF3C7; }
+  .cell[data-status="feil"]      { background: #FEE2E2; }
+</style>
+<!-- TagoIO custom-widget SDK v2.2.0, Apache-2.0, https://github.com/tago-io/custom-widget (lagt inn slik at filen er selvstendig) -->
+<script>
+"use strict";(()=>{function I(){return typeof crypto<"u"&&typeof crypto.randomUUID=="function"?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)}var S=class{constructor(){this.pending=new Map}add(e,t){this.pending.set(e,t)}resolve(e,t){let r=this.pending.get(e);return r?(this.pending.delete(e),r.resolve(t),!0):!1}reject(e,t){let r=this.pending.get(e);return r?(this.pending.delete(e),r.reject(t),!0):!1}rejectAll(e){for(let[,t]of this.pending)t.reject(e);this.pending.clear()}get size(){return this.pending.size}has(e){return this.pending.has(e)}},m=class{constructor(e={}){this.handlers=new Set,this.pool=new S,this.destroyed=!1,this.allowedOrigins=e.allowedOrigins?new Set(e.allowedOrigins):null,this.boundReceive=this.handleMessage.bind(this),typeof window<"u"&&window.addEventListener("message",this.boundReceive,!1)}handleMessage(e){if(this.destroyed||this.allowedOrigins&&!this.allowedOrigins.has(e.origin))return;let t=e.data;if(t){t.status!==void 0&&t.key&&(t.status?this.pool.resolve(t.key,t):this.pool.reject(t.key,t));for(let r of this.handlers)try{r(t)}catch(n){console.error("[TagoIO Widget] Message handler threw an error:",n)}}}send(e){this.destroyed||typeof window>"u"||window.parent.postMessage(e,"*")}sendWithResponse(e){let t=I(),r={...e,key:t};return new Promise((n,i)=>{this.pool.add(t,{resolve:n,reject:i}),this.send(r)})}onMessage(e){return this.handlers.add(e),()=>{this.handlers.delete(e)}}destroy(){this.destroyed=!0,typeof window<"u"&&window.removeEventListener("message",this.boundReceive,!1),this.pool.rejectAll(new Error("MessageBridge destroyed")),this.handlers.clear()}get pendingCount(){return this.pool.size}get isDestroyed(){return this.destroyed}};function k(e,t){return t}function O(e,t,r){let n=[...e,...t];return n.length<=r?n:n.slice(n.length-r)}function E(e,t){return e.id===t.id&&e.value===t.value&&e.time===t.time&&e.variable===t.variable}function C(e,t){if(e.length===0)return t;if(t.length===0)return e;let r=new Map;for(let a of e){let l=D(a);r.set(l,a)}let n=!1,i=[],s=new Set;for(let a of t){let l=D(a);s.add(l);let c=r.get(l);if(a.resource){i.push(a),a!==c&&(n=!0);continue}if(!c){i.push(a),n=!0;continue}let p=A(c.result??[],a.result??[]);p!==c.result?(i.push({...a,result:p}),n=!0):i.push(c)}for(let[a,l]of r)s.has(a)||i.push(l);return n||i.length!==e.length?i:e}function A(e,t){if(t.length===0)return e;let r=new Map;for(let s of t)r.set(s.id,s);let n=!1,i=[];for(let s of e){let a=r.get(s.id);a?(E(s,a)?i.push(s):(i.push(a),n=!0),r.delete(s.id)):n=!0}for(let[,s]of r)i.push(s),n=!0;return n&&i.sort((s,a)=>new Date(a.time).getTime()-new Date(s.time).getTime()),n?i:e}function D(e){if(e.resource){let{type:n,id:i,index:s}=e.resource;return`resource:${n}:${i??""}:${s??""}`}let t=e.data?.variable?.join(",")??"",r=e.data?.origin??"";return`data:${t}|${r}`}var y={widget:null,realtimeData:[],userInformation:null,blueprintDevices:null,errors:[],isReady:!1,realtimeEventCount:0,lastRealtimeAt:null},B={...y},b=class{constructor(e={}){this.state={...y},this.listeners=new Set,this.initialized=!1,this.unsubBridge=null,this.handleInbound=t=>{let r={};if(t.userInformation&&(r.userInformation=t.userInformation),t.blueprintDevices&&(r.blueprintDevices=t.blueprintDevices),t.widget&&(r.widget=t.widget,r.isReady=!0),t.status===!1){let n=t;r.errors=[...this.state.errors,n]}Object.keys(r).length>0&&(this.state={...this.state,...r}),t.realtime?this.updateRealtime(t.realtime):Object.keys(r).length>0&&this.emit()},this.subscribe=t=>(this.listeners.add(t),()=>{this.listeners.delete(t)}),this.getSnapshot=()=>this.state,this.getServerSnapshot=()=>B,this.strategy=e.realtimeStrategy??"merge",this.maxRecords=e.realtimeMaxRecords??1e3,this.readyOptions=e.readyOptions??{},this.bridgeOptions={allowedOrigins:e.allowedOrigins},this.bridge=new m(this.bridgeOptions),typeof window<"u"&&(this.unsubBridge=this.bridge.onMessage(this.handleInbound))}updateRealtime(e){let t;switch(this.strategy){case"replace":t=k(this.state.realtimeData,e);break;case"append":t=O(this.state.realtimeData,e,this.maxRecords);break;default:t=C(this.state.realtimeData,e);break}this.state={...this.state,realtimeData:t,realtimeEventCount:this.state.realtimeEventCount+1,lastRealtimeAt:Date.now()},this.emit()}updateState(e){this.state={...this.state,...e},this.emit()}emit(){for(let e of this.listeners)e()}initialize(){this.initialized||(this.initialized=!0,this.bridge.isDestroyed&&(this.bridge=new m(this.bridgeOptions),typeof window<"u"&&(this.unsubBridge=this.bridge.onMessage(this.handleInbound))),this.bridge.send({loaded:!0,...this.readyOptions}))}destroy(){this.unsubBridge?.(),this.bridge.destroy(),this.listeners.clear(),this.initialized=!1}sendData(e){let t=Array.isArray(e)?e:[e];return this.bridge.sendWithResponse({variables:t})}editData(e){let t=Array.isArray(e)?e:[e];return this.bridge.sendWithResponse({variables:t,method:"edit"})}deleteData(e){let t=Array.isArray(e)?e:[e];return this.bridge.sendWithResponse({variables:t,method:"delete"})}editResourceData(e){let t=Array.isArray(e)?e:[e];return this.bridge.sendWithResponse({variables:t,method:"edit-resource"})}openLink(e){this.bridge.send({method:"open-link",url:e})}closeModal(){this.bridge.send({method:"close-modal"})}runAnalysis(e){this.bridge.send({method:"run-analysis",scope:e})}refreshResources(){this.bridge.send({method:"refresh-resources"})}clearErrors(){this.updateState({errors:[]})}clearRealtimeData(){this.updateState({realtimeData:[],realtimeEventCount:0,lastRealtimeAt:null})}getBridge(){return this.bridge}};function w(e,t){if(!e||!t)return[];let r=[];for(let n of e)for(let i of t)n.variable===i.variable&&r.push({device:i.origin.id,origin:i.origin.id,...i.origin.bucket&&{bucket:i.origin.bucket},...n});return r}var o=new b;window.TagoIO={};window.TagoIO.autoFill=!0;var u=null,f=null,h=null,g=null,T=null,d=o.getSnapshot();o.subscribe(()=>{let e=o.getSnapshot();if(e.userInformation&&e.userInformation!==d.userInformation&&g&&g(e.userInformation),e.blueprintDevices&&e.blueprintDevices!==d.blueprintDevices&&T&&T(e.blueprintDevices),e.widget&&e.widget!==d.widget&&f&&f(e.widget),e.realtimeData!==d.realtimeData&&e.realtimeData.length>0&&u&&u(e.realtimeData),e.errors.length>d.errors.length&&h){let t=e.errors[e.errors.length-1];h(t)}d=e});var M=e=>{o.getBridge().send({loaded:!0,...e})},W=e=>{f=e},U=e=>{u=e},j=e=>{h=e},P=e=>{g=e},F=e=>{T=e};function L(){return o.getSnapshot().widget?.display?.variables??[]}function v(e){let t=Array.isArray(e)?e:[e];if(window.TagoIO.autoFill)return console.info("AutoFill is enabled, the origin id will be automatically generated based on the variables of the widget, this option can be disabled by setting window.TagoIO.autoFill = false."),w(t,L());let r=t.filter(n=>!n.origin);if(r.length>0)throw new Error(`AutoFill is disabled. ${r.length} record(s) missing required "origin" field. Either enable autoFill or provide this field.`);return t}function R(e,t,r){let n=e.call(o,t);if(r){n.then(i=>r(i),i=>r(null,i));return}return n}var N=(e,t)=>{let r=v(e);return R(o.sendData.bind(o),r,t)},z=(e,t)=>{let r=v(e);return R(o.editData.bind(o),r,t)},V=(e,t)=>{let r=Array.isArray(e)?e:[e],n=o.deleteData(r);if(t){n.then(i=>t(i),i=>t(null,i));return}return n},q=(e,t)=>{let r=Array.isArray(e)?e:[e],n=o.editResourceData(r);if(t){n.then(i=>t(i),i=>t(null,i));return}return n},$=e=>{o.openLink(e)},x=()=>{o.closeModal()},K=e=>{o.runAnalysis(e)},_=()=>{o.refreshResources()};window.TagoIO.ready=M;window.TagoIO.onStart=W;window.TagoIO.onRealtime=U;window.TagoIO.onError=j;window.TagoIO.onSyncUserInformation=P;window.TagoIO.onSyncBlueprintDevices=F;window.TagoIO.sendData=N;window.TagoIO.editData=z;window.TagoIO.deleteData=V;window.TagoIO.editResourceData=q;window.TagoIO.openLink=$;window.TagoIO.closeModal=x;window.TagoIO.runAnalysis=K;window.TagoIO.refreshResources=_;})();
+
+</script>
+</head>
+<body>
+  <div id="grid" role="group" aria-label="Romfordeling i skapet">
+    <div class="cell" data-room="18" style="grid-column:1;grid-row:1 / span 2" aria-label="Rom 18, størrelse L"><span class="nr">18</span><span class="size">L</span></div>
+    <div class="cell" data-room="4" style="grid-column:1;grid-row:3 / span 1" aria-label="Rom 4, størrelse M"><span class="nr">4</span><span class="size">M</span></div>
+    <div class="cell" data-room="5" style="grid-column:1;grid-row:4 / span 1" aria-label="Rom 5, størrelse M"><span class="nr">5</span><span class="size">M</span></div>
+    <div class="cell" data-room="6" style="grid-column:1;grid-row:5 / span 1" aria-label="Rom 6, størrelse M"><span class="nr">6</span><span class="size">M</span></div>
+    <div class="cell" data-room="7" style="grid-column:1;grid-row:6 / span 1" aria-label="Rom 7, størrelse M"><span class="nr">7</span><span class="size">M</span></div>
+    <div class="cell" data-room="8" style="grid-column:1;grid-row:7 / span 1" aria-label="Rom 8, størrelse M"><span class="nr">8</span><span class="size">M</span></div>
+    <div class="cell" data-room="15" style="grid-column:1;grid-row:8 / span 2" aria-label="Rom 15, størrelse L"><span class="nr">15</span><span class="size">L</span></div>
+    <div class="cell" data-room="17" style="grid-column:2;grid-row:1 / span 2" aria-label="Rom 17, størrelse L"><span class="nr">17</span><span class="size">L</span></div>
+    <div class="cell" data-room="3" style="grid-column:2;grid-row:3 / span 1" aria-label="Rom 3, størrelse M"><span class="nr">3</span><span class="size">M</span></div>
+    <div class="cell" data-room="1" style="grid-column:2;grid-row:6 / span 1" aria-label="Rom 1, størrelse M"><span class="nr">1</span><span class="size">M</span></div>
+    <div class="cell" data-room="2" style="grid-column:2;grid-row:7 / span 1" aria-label="Rom 2, størrelse M"><span class="nr">2</span><span class="size">M</span></div>
+    <div class="cell" data-room="14" style="grid-column:2;grid-row:8 / span 2" aria-label="Rom 14, størrelse L"><span class="nr">14</span><span class="size">L</span></div>
+    <div class="cell" data-room="19" style="grid-column:3;grid-row:1 / span 2" aria-label="Rom 19, størrelse L"><span class="nr">19</span><span class="size">L</span></div>
+    <div class="cell" data-room="9" style="grid-column:3;grid-row:3 / span 1" aria-label="Rom 9, størrelse M"><span class="nr">9</span><span class="size">M</span></div>
+    <div class="cell" data-room="10" style="grid-column:3;grid-row:4 / span 1" aria-label="Rom 10, størrelse M"><span class="nr">10</span><span class="size">M</span></div>
+    <div class="cell" data-room="11" style="grid-column:3;grid-row:5 / span 1" aria-label="Rom 11, størrelse M"><span class="nr">11</span><span class="size">M</span></div>
+    <div class="cell" data-room="12" style="grid-column:3;grid-row:6 / span 1" aria-label="Rom 12, størrelse M"><span class="nr">12</span><span class="size">M</span></div>
+    <div class="cell" data-room="13" style="grid-column:3;grid-row:7 / span 1" aria-label="Rom 13, størrelse M"><span class="nr">13</span><span class="size">M</span></div>
+    <div class="cell" data-room="16" style="grid-column:3;grid-row:8 / span 2" aria-label="Rom 16, størrelse L"><span class="nr">16</span><span class="size">L</span></div>
+    <div class="cell screen" style="grid-column:2;grid-row:4 / span 2"><span class="nr">Skjerm</span></div>
+  </div>
+
+  <script>
+    // Valgfritt og ikke nødvendig for visningen. Status kan senere settes slik:
+    // window.boxnRooms.setStatus({ 1: 'ledig', 2: 'opptatt', 14: 'feil' });
+    window.boxnRooms = {
+      setStatus: function (map) {
+        var cells = document.querySelectorAll('[data-room]');
+        for (var i = 0; i < cells.length; i++) {
+          var n = cells[i].getAttribute('data-room');
+          if (map && map[n]) { cells[i].setAttribute('data-status', map[n]); }
+          else { cells[i].removeAttribute('data-status'); }
+        }
+      }
+    };
+  </script>
+  <script>
+    // Følger TagoIOs eget mønster: registrer callbacks, kall så ready().
+    try {
+      window.TagoIO.onStart(function () {});
+      window.TagoIO.onRealtime(function () {});
+      window.TagoIO.ready();
+    } catch (e) {
+      // Utenfor TagoIO (eller hvis skriptet ikke lastet) vises rommene likevel.
+    }
+  </script>
+</body>
+</html>
